@@ -20,69 +20,48 @@ connection.connect(function(err) {
 
   // run the displayItems function after the connection is made to prompt the user
   displayItems();
+  
 });
 
-function displayItems(){
-	connection.query('SELECT item_id, product_name, price FROM products WHERE stock_quantity > 0;', function(err, res){
-		console.log("Currently available products:");
-		// Create a table
-		var table = new Table({
-		    head: ['Product ID', 'Product Name', 'Price']
-		});
-		// Add rows to table
-		for(key in res){
-			table.push([res[key].item_id, res[key].product_name, '$'+res[key].price.toFixed(2)]);
-		}
-		// Print table
-		console.log(table.toString());
-		
-		purchaseItem();
-	});
+function displayItems() {
+  connection.query("SELECT * FROM products;", function(error, results, fields) {
+    results.forEach((element, index) => {
+      let id    = element.item_id;
+      let name  = element.product_name;
+      let dept  = element.department_name;
+      let price = element.price;
+
+      console.log(id + " " + name + " " + dept + " " + price);
+    });
+    start(results);
+
+  });
 }
 
-//Prompt for item & quantity for user to purchase
-var purchaseItem = function(){
+function start(products) {
 
-	inquirer.prompt([
-	{
-		name: 'itemID',
-		message: 'Enter the item number you would like to purchase'
-	},
-	{
-		name: 'qty',
-		message: 'How many units would you like to purchase?'
-	}
-	]).then(function(ans){
-		if(ans.qty < 1){
-			console.log("To make a purchase, you must enter at least 1 unit for purchase.");
-		}
-		else{
-			// Get item and quantity from database
-			connection.query('SELECT product_name, stock_quantity, price FROM products WHERE item_id = ?', [ans.itemID], function(err, res){
-				// Check if user entered a valid item_id
-				if(err || res.length == 0) {
-					console.log("Item does not exist. Check your item ID.");
-				}
-				else{
-					// If purchase can be made
-					if(ans.qty <= res[0].stock_quantity){
-						// Update database quantity
-						var sales = res[0].price*ans.qty;
-						//duct multiplied by the quantity purchased is added to the product's product_sales column.
-						connection.query('UPDATE products SET stock_quantity = stock_quantity - ?, product_sales = product_sales + ? '
-							+ 'WHERE item_id = ?;', [ans.qty, sales, ans.itemID],
-							function(err, res){
-								if(err) throw err;
-							});
-						// Display cost to user
-						console.log("Total cost $%d for %d units of %s", sales.toFixed(2), ans.qty, res[0].product_name);
-					}
-					// Purchase cannot be made
-					else{
-						console.log("Insufficient inventory for purchase. There are only %s units available.", res[0].stock_quantity);
-					}
-				}
-			});
-		}
-	});
-};
+  var choicesArray = [];
+    products.forEach((element, index) => {
+      let id    = element.item_id;
+      let name  = element.product_name; 
+      console.log(id)
+      choicesArray.push(id);
+    });
+
+  inquirer
+    .prompt({
+      name: "action",
+      type: "list",
+      message: "What would you item would you like to buy?",
+      choices: choicesArray
+    })
+    .then(function(answer) {
+      var query = "SELECT price, stock_quantity FROM products WHERE ?";
+      connection.query(query, { choices: answer.item_id }, function(err, res) {
+        for (var i = 0; i < res.length; i++) {
+          console.log("Item: " + res[i].item_id + " || Price: " + res[i].price + " || Quantity Available: " + res[i].stock_quantity);
+        }
+        start();
+      });
+    });
+}
