@@ -4,8 +4,8 @@
   "description": "Store front CLI",
   "main": "bamazonCustomer.js",
   "dependencies": {
-    "inquirer": "^5.2.0",
-    "mysql": "^2.15.0"
+    "inquirer": "^7.1.0",
+    "mysql": "^2.18.1"
   },
   "devDependencies": {},
   "scripts": {
